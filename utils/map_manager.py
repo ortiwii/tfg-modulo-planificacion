@@ -22,6 +22,8 @@ def save_pickle_map(map, file_path):
         print("No se ha podido guardar el mapa correctamente en " + file_path)
 
 def calcular_tramos_por_distancia(trayectoria, num_tramos):
+    # TODO: Mejorar resultados
+
     # Obtener las coordenadas x e y de la trayectoria
     x = trayectoria[:, 0]
     y = trayectoria[:, 1]

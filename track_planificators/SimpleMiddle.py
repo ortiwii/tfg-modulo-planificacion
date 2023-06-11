@@ -108,6 +108,7 @@ class SimpleMiddlePath():
 
         self.P, nci, nce = self.preparar_lista_conos()
         if self.P is not None:
+            self.conexiones = []
             internal = []
 
             xMaxI, yMaxI = self.conos_azules[:, :2].max(axis=0)
@@ -166,7 +167,7 @@ def main(args=None):
     mapa = load_pickle_map(file_path)
 
     # - Cargar planificador
-    planificador = SimpleMiddlePath(3, 32, 100)
+    planificador = SimpleMiddlePath(3, 0, 100)
 
     # - Inicializar plot en modo interactivo
     plt.ion()
@@ -185,8 +186,9 @@ def main(args=None):
     waypoints_global, = ax1.plot([], [], '.', color='red', markersize=6, label='Waypoints')
 
     ax2.set_title('Actual')
+
     # Lo vamos a separar por tramos para hacer una simulación de planificación local
-    num_tramos = 10
+    num_tramos = 12
     tramos_azul = calcular_tramos_por_distancia(mapa['azules'], num_tramos)
     tramos_amarillo = calcular_tramos_por_distancia(mapa['amarillos'], num_tramos)
 
@@ -195,18 +197,17 @@ def main(args=None):
         if tramo_act == len(tramos_azul):  # Ultimo tramo
             conos_azules = mapa['azules'][tramos_azul[-1][1]:]
             conos_azules = np.append(conos_azules, [mapa['azules'][0]], axis=0)
-            conos_amarillos = mapa['amarillos'][tramos_amarillo[-1][1]-1:]
+            conos_amarillos = mapa['amarillos'][tramos_amarillo[-1][1]:]
             conos_amarillos = np.append(conos_amarillos, [mapa['amarillos'][0]], axis=0)
         else:  # Resto de tramos
             conos_azules = mapa['azules'][tramos_azul[tramo_act][0]:tramos_azul[tramo_act][1] + 1]
             conos_amarillos = mapa['amarillos'][tramos_amarillo[tramo_act][0]:tramos_amarillo[tramo_act][1] + 1]
 
-        waypoints, path, P, s, x, y = planificador.planficar_trayectoria(conos_azules, conos_amarillos,
+        waypoints, path, P, conexiones, x, y = planificador.planficar_trayectoria(conos_azules, conos_amarillos,
                                                                          mapa['naranjas'],
                                                                          mapa['naranjas_grandes'], False)
         if waypoints is not None:
             # Crear la figura y los subplots con tamaño relativo
-
             ax1.plot(path[0], path[1], '-', color='black', label='Path')
             # ax1.triplot(P[:, 0], P[:, 1], s, color='#9c259a')
             ax1.plot(waypoints[:, 0], waypoints[:, 1], '.', color='red', markersize=6, label='Waypoints')
@@ -215,16 +216,22 @@ def main(args=None):
 
             ax2.clear()
             ax2.set_title('Actual')
-
+            for conexion in conexiones:
+                p1 = P[conexion[0]]
+                p2 = P[conexion[1]]
+                ax1.plot([p1[0], p2[0]], [p1[1], p2[1]], '-', color="#9c259a")
+                ax2.plot([p1[0], p2[0]], [p1[1], p2[1]], '-', color="#9c259a")
             ax2.plot(path[0], path[1], '-', color='black', label='Path')
             # ax2.triplot(P[:, 0], P[:, 1], s, color='#9c259a')
 
             rangoInt = range(0, P.shape[0], 2)
+            ax1.plot(P[rangoInt, 0], P[rangoInt, 1], '-', color='blue')
             ax2.plot(P[rangoInt, 0], P[rangoInt, 1], '-', color='blue')
             ax2.plot(P[rangoInt, 0], P[rangoInt, 1], 'o', markerfacecolor='blue',
                      markeredgecolor='black', markersize=8, label='Azules')
 
             rangoExt = range(1, P.shape[0], 2)
+            ax1.plot(P[rangoExt, 0], P[rangoExt, 1], '-', color='yellow')
             ax2.plot(P[rangoExt, 0], P[rangoExt, 1], '-', color='yellow')
             ax2.plot(P[rangoExt, 0], P[rangoExt, 1], 'o', markerfacecolor='yellow',
                      markeredgecolor='black', markersize=8, label='Amarillos')
