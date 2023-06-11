@@ -55,16 +55,16 @@ def getLadoConosNaranjasGrades(posicion: np.ndarray,
         y = cono_act[1] - posicion[1]
         act = [x, y, 0]
         act_rot = r.apply(act)
-        if (act_rot[0] >= -2 and act_rot[0] <= 4):
-            if (act_rot[1] > 0):
-                if (act_rot[1] <= 4.0):  # Azul
-                    if (len(conos_azules) > 0 and conos_azules[0][0] > act_rot[0]):
+        if -2 <= act_rot[0] <= 4:
+            if 0 < act_rot[1] <= 4:
+                if act_rot[1] <= 4.0:  # Azul
+                    if len(conos_azules) > 0 and conos_azules[0][0] > act_rot[0]:
                         conos_azules = [act_rot, conos_azules[0]]
                     else:
                         conos_azules.append(cono_act)
-            else:
-                if (act_rot[1] >= -4.0):  # Amarillo
-                    if (len(conos_amarillos) > 0 and conos_amarillos[0][0] > act_rot[0]):
+            elif act_rot[0] >= -4:
+                if act_rot[1] >= -4.0:  # Amarillo
+                    if len(conos_amarillos) > 0 and conos_amarillos[0][0] > act_rot[0]:
                         conos_amarillos = [act_rot, conos_amarillos[0]]
                     else:
                         conos_amarillos.append(cono_act)
@@ -248,6 +248,8 @@ def generar_puntos_aleatorios(referencia: np.ndarray, jaw: float, num_puntos: in
         path = mpath.Path(zonaSeleccionPointsRotado[:, :2])
         if path.contains_point(punto[:2]):
             aleatorios.append(punto)
+            # plt.plot(punto[0], punto[1], '.')
+            # plt.plot([referencia[0], punto[0]], [referencia[1], punto[1]], ':', color='black')
 
     puntos = np.array(aleatorios)
     return puntos
@@ -260,6 +262,9 @@ def construir_pista_completa(blue_cones: np.ndarray,
                              posicion: np.ndarray = np.zeros(3),
                              jaw: float = 0.00,
                              plot=True) -> tuple:
+
+    # plt.xlim([15,40])
+    # plt.ylim([-5,15])
     print('\n# 0 -- Eligiendo lado de conos naranjas grandes ----------------')
 
     conos_naranjas_azules, conos_naranjas_amarillos = getLadoConosNaranjasGrades(posicion,
@@ -280,21 +285,22 @@ def construir_pista_completa(blue_cones: np.ndarray,
     print('    Construido el lado azul')
 
     if plot:
-        plt.plot(untrack_blue[:, 0], untrack_blue[:, 1], 'x', markersize=10, color='red', label='Desconocidos')
+        # plt.plot(untrack_blue[:, 0], untrack_blue[:, 1], 'x', markersize=10, color='red', label='Desconocidos')
+        plt.plot(untrack_blue[:, 0], untrack_blue[:, 1], 'x', markersize=10, color='red')
         plt.plot(untrack_yellow[:, 0], untrack_yellow[:, 1], 'x', markersize=15, color='red')
         plt.plot([], [], 'o', markersize=8, markerfacecolor='orange', markeredgecolor='black', label='Naranjas')
         plt.plot([], [], 'o', markersize=8, markerfacecolor='blue', markeredgecolor='black', label='Azules')
         plt.plot([], [], 'o', markersize=8, markerfacecolor='yellow', markeredgecolor='black', label='Amarillos')
         plt.plot([], [], 'o', markerfacecolor='grey', markeredgecolor='black', markersize=8, label='Imaginarios')
         plt.legend()
-        plt.title('Contrucción Bordes de Pista')
+        # plt.title('Contrucción Bordes de Pista')
         plt.show()
 
     return track_yellow, untrack_yellow, track_blue, untrack_blue
 
 
 if __name__ == '__main__':
-    from utils.map_manager import load_pickle_map
+    from utils.map_manager import load_pickle_map, save_pickle_map
     import sys
     import os
     import pickle
@@ -306,8 +312,8 @@ if __name__ == '__main__':
     # ------------------------------------------------------------------------------------------------------------------
 
     # - Pistas ---------
-    # file_path = '../tracks/pista-00.map'  # Pista desordenada sin trayectoria definida
-    file_path = '../tracks/pista-1-vacios-00.map'  # Pista no ordenada con conos que faltan y sin trayectoria definida
+    file_path = '../tracks/pista-00.map'  # Pista desordenada sin trayectoria definida
+    # file_path = '../tracks/pista-1-vacios-00.map'  # Pista no ordenada con conos que faltan y sin trayectoria definida
     # file_path = '../tracks/pista-2-vacios-00.map'  # Pista no ordenada con conos que faltan y sin trayectoria definida
 
     # - Cargar mapa ----
@@ -334,14 +340,33 @@ if __name__ == '__main__':
         for i, coord in enumerate(mapa['naranjas_grandes']):
             axes_0.annotate(str(i), (coord[0], coord[1]), textcoords="offset points", xytext=(5, 5), ha='center')
 
-        axes_0.set_title('Pista completa sin ordenar')
+        axes_0.set_title('Skidpad layout')
+        axes_0.axis('equal')
         axes_0.legend()
         figure_0.show()
 
     # ------------------
+
 
     # - Construcción de la pista
     track_yellow, untrack_yellow, track_blue, untrack_blue = construir_pista_completa(mapa['azules'], mapa['amarillos'],
                                                                                       mapa['naranjas_grandes'],
                                                                                       np.array([[]]),
                                                                                       plot=PLOT_CONSTRUCCION)
+    mapa['azules'] = track_blue
+    mapa['amarillos'] = track_yellow
+    mapa['naranjas'] = np.array([])
+    file_path = '../tracks/pista-ordenada-00.map'
+    save_pickle_map(mapa, file_path)
+
+    # num = 15
+    # track_blue = track_blue[2:]
+    # track_yellow = track_yellow[2:]
+    # track_blue = np.delete(track_blue, [8,9, 22,23], axis=0)
+    # track_yellow = np.delete(track_yellow, [12, 13, 25], axis=0)
+    # # print(track_blue)
+    # #
+    # track_yellow, untrack_yellow, track_blue, untrack_blue = construir_pista_completa(track_blue, track_yellow,
+    #                                                                                   mapa['naranjas_grandes'],
+    #                                                                                   np.array([[]]),
+    #                                                                                   plot=True)
