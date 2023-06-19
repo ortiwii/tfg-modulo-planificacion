@@ -2,9 +2,11 @@ import math
 import random
 import matplotlib.pyplot as plt
 import numpy as np
-from RRT import RRT
-from PathGenerator import interpolar_spline
-
+from .RRT import RRT
+import sys
+import os
+sys.path.append(os.path.abspath("../.."))
+from utils.PathGenerator import interpolar_spline, approximate_b_spline_path
 
 class RRTStar(RRT):
     """
@@ -296,6 +298,7 @@ class RRTStarPlanificator():
         lado_azul = np.array(interpolar_spline(self.k_, self.s_, self.num_points, self.conos_azules[:, :2])).T
         lado_amarillo = np.array(interpolar_spline(self.k_, self.s_, self.num_points, self.conos_amarillos[:, :2])).T
 
+        # lado_azul = np.array(approximate_b_spline_path(self.conos_azules[:, 0], self.conos_azules[:,1], self.num_points, self.k_, s=self.s_))
         xMaxAzul, yMaxAzul = conos_azules[:, :2].max(axis=0)
         xMinAzul, yMinAzul = conos_azules[:, :2].min(axis=0)
 
@@ -330,26 +333,23 @@ class RRTStarPlanificator():
             path_resolution=self.path_resolution,
             search_until_max_iter=self.search_until_max_iter)
 
-        waypoints = rrt_star.planning(animation=False)
+        waypoints = np.array(rrt_star.planning(animation=False))
         path = np.array(interpolar_spline(3, 4, 50, np.array(waypoints))).T
+        # path = np.transpose(approximate_b_spline_path(waypoints[:,0], waypoints[:,1], 50, 4))
         return waypoints, path
 
 
 def main():
-    import sys
-    import os
-    sys.path.append(os.path.abspath(".."))
     from utils.map_manager import load_pickle_map, calcular_tramos_por_distancia
     import matplotlib.pyplot as plt
     import matplotlib.gridspec as gridspec
-    from PathGenerator import interpolar_spline
 
     # ------------------------------------------------------------------------------------------------------------------
     # PARA TESTING -----------------------------------------------------------------------------------------------------
     # ------------------------------------------------------------------------------------------------------------------
 
     # - Pistas ---------
-    file_path = '../tracks/pista-ordenada-00.map'  # Pista ordenada sin trayectoria definida
+    file_path = '../../tracks/pista-ordenada-00.map'  # Pista ordenada sin trayectoria definida
 
     # - Cargar mapa ----
     mapa = load_pickle_map(file_path)
@@ -368,13 +368,13 @@ def main():
              markeredgecolor='black', markersize=8)
     ax1.plot(mapa['naranjas_grandes'][:, 0], mapa['naranjas_grandes'][:, 1], 'o', markerfacecolor='orange',
              markeredgecolor='black', markersize=8)
-    waypoints_global, = ax1.plot([], [], '.', color='red', markersize=6, label='Waypoints')
+    ax1.plot([], [], '.', color='red', markersize=6, label='Waypoints')
 
     ax2.set_title('Actual')
 
     # Lo vamos a separar por tramos para hacer una simulación de planificación local
     num_tramos = 10
-    max_iter = 200
+    max_iter = 300
 
     tramos_azul = calcular_tramos_por_distancia(mapa['azules'], num_tramos)
     tramos_amarillo = calcular_tramos_por_distancia(mapa['amarillos'], num_tramos)
@@ -389,90 +389,35 @@ def main():
             conos_azules = mapa['azules'][tramos_azul[tramo_act][0]:tramos_azul[tramo_act][1] + 1]
             conos_amarillos = mapa['amarillos'][tramos_amarillo[tramo_act][0]:tramos_amarillo[tramo_act][1] + 1]
 
-        planificator = RRTStarPlanificator(expand_dis=1.5, robot_radius=0.8, max_iter=max_iter, path_resolution=0.05,
-                                           search_until_max_iter=False)
+        planificator = RRTStarPlanificator(expand_dis=0.5, robot_radius=1.8, max_iter=max_iter, path_resolution=0.05,
+                                           search_until_max_iter=True)
         waypoints, path = planificator.planficar_trayectoria(conos_azules, conos_amarillos, mapa['naranjas'],
                                                              mapa['naranjas_grandes'])
-        waypoints_T = np.transpose(waypoints)
-
-        ax2.clear()
-        ax2.set_title('Actual')
-        ax1.plot(conos_azules[:, 0], conos_azules[:, 1], '-', color='blue')
-        ax2.plot(conos_azules[:, 0], conos_azules[:, 1], '-', color='blue')
-        ax1.plot(conos_amarillos[:, 0], conos_amarillos[:, 1], '-', color='yellow')
-        ax2.plot(conos_amarillos[:, 0], conos_amarillos[:, 1], '-', color='yellow')
-        # ax1.plot(waypoints_T[0], waypoints_T[1], '-', color='black', label='Path')
-        ax1.plot(path[:, 0], path[:, 1], '-', color='red', label='Path smoth')
-        ax1.plot(waypoints_T[0], waypoints_T[1], 'o', color='black', label='Path')
-        # ax2.plot(waypoints_T[0], waypoints_T[1], '-', color='black', label='Path')
-        ax2.plot(path[:, 0], path[:, 1], '-', color='red', label='Path smoth')
-        ax2.plot(waypoints_T[0], waypoints_T[1], 'o', color='black', label='Path')
-        ax2.plot(conos_azules[:, 0], conos_azules[:, 1], 'o', markerfacecolor='blue',
-                 markeredgecolor='black', markersize=8)
-
-        ax2.plot(conos_amarillos[:, 0], conos_amarillos[:, 1], 'o', markerfacecolor='yellow',
-                 markeredgecolor='black', markersize=8)
-
-        fig.canvas.draw()
-        fig.canvas.flush_events()
-
-        plt.pause(2.0)
-
-
-def main2(args=None):
-    print("Start ")
-
-    show_animation = True
-
-    # ====Search Path with RRT====
-    obstacle_list = [
-        (0, -2, 0.5),
-        (2, -2, 0.5),
-        (4, -2, 0.5),
-        (6, -2, 0.5),
-        (8, -2, 0.5),
-        (10, -2, 0.5),
-        (12, -2, 0.5),
-        (0, 2, 0.5),
-        (2, 2, 0.5),
-        (4, 2, 0.5),
-        (6, 2, 0.5),
-        (8, 2, 0.5),
-        (10, 2, 0.5),
-        (12, 2, 0.5),
-
-    ]  # [x,y,size(radius)]
-
-    # Set Initial parameters
-    rrt_star = RRTStar(
-        start=[0, 0],
-        goal=[10, 0],
-        rand_area_x=[-4, 4],
-        rand_area_y=[-4, 4],
-        obstacle_list=obstacle_list,
-        expand_dis=1.0,
-        robot_radius=1,
-        max_iter=100,
-        path_resolution=0.50,
-        search_until_max_iter=False)
-    path = rrt_star.planning(animation=False)
-
-    if path is None:
-        print("Cannot find path")
-    else:
-        print("found path!!")
-
-        # Draw final path
-        if show_animation:
-            obstacles = np.array(obstacle_list)
-            rrt_star.draw_graph()
-            plt.plot([x for (x, y) in path], [y for (x, y) in path], 'r-')
-            plt.plot([x for (x, y) in path], [y for (x, y) in path], 'o', color='black')
-            plt.plot(obstacles[:, 0], obstacles[:, 1], 'o', color='blue')
-            plt.grid(True)
-            plt.show()
+        # waypoints_T = np.transpose(waypoints)
+        #
+        # ax2.clear()
+        # ax2.set_title('Actual')
+        # ax1.plot(conos_azules[:, 0], conos_azules[:, 1], '-', color='blue')
+        # ax2.plot(conos_azules[:, 0], conos_azules[:, 1], '-', color='blue')
+        # ax1.plot(conos_amarillos[:, 0], conos_amarillos[:, 1], '-', color='yellow')
+        # ax2.plot(conos_amarillos[:, 0], conos_amarillos[:, 1], '-', color='yellow')
+        # # ax1.plot(waypoints_T[0], waypoints_T[1], '-', color='black', label='Path')
+        # ax1.plot(path[:, 0], path[:, 1], '-', color='red', label='Path smoth')
+        # ax1.plot(waypoints_T[0], waypoints_T[1], 'o', color='black', label='Path')
+        # # ax2.plot(waypoints_T[0], waypoints_T[1], '-', color='black', label='Path')
+        # ax2.plot(path[:, 0], path[:, 1], '-', color='red', label='Path smoth')
+        # ax2.plot(waypoints_T[0], waypoints_T[1], 'o', color='black', label='Path')
+        # ax2.plot(conos_azules[:, 0], conos_azules[:, 1], 'o', markerfacecolor='blue',
+        #          markeredgecolor='black', markersize=8)
+        #
+        # ax2.plot(conos_amarillos[:, 0], conos_amarillos[:, 1], 'o', markerfacecolor='yellow',
+        #          markeredgecolor='black', markersize=8)
+        #
+        # fig.canvas.draw()
+        # fig.canvas.flush_events()
+        #
+        # plt.pause(20.0)
 
 
 if __name__ == '__main__':
     main()
-    # main2()

@@ -4,6 +4,7 @@ import random
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 class RRT:
     """
     Class for RRT planning
@@ -179,9 +180,14 @@ class RRT:
         for node in self.node_list:
             if node.parent:
                 plt.plot(node.path_x, node.path_y, "-g")
-
+        i = 10
         for (ox, oy, size) in self.obstacle_list:
-            self.plot_circle(ox, oy, size)
+            # self.plot_circle(ox, oy, size)
+            # TODO
+            if i % 10 == 0:
+                plt.plot(ox, oy, 'o', color='blue')
+                # self.plot_circle(ox, oy, size)
+            i = i + 1
 
         if self.play_area is not None:
             plt.plot([self.play_area.xmin, self.play_area.xmax,
@@ -195,47 +201,9 @@ class RRT:
         plt.plot(self.start.x, self.start.y, "xr")
         plt.plot(self.end.x, self.end.y, "xr")
         plt.axis("equal")
-        # plt.axis([-2, 15, -2, 15])
         plt.grid(True)
         plt.pause(0.01)
 
-    def punto_dentro_de_zona(self, punto, exteriores, interiores):
-        n_interiores = interiores.shape[0]
-        n_exteriores = exteriores.shape[0]
-
-        # Verificar si el punto está fuera de los límites exteriores
-        for i in range(n_exteriores):
-            p1 = exteriores[i]
-            p2 = exteriores[(i + 1) % n_exteriores]
-            if (punto[1] > min(p1[1], p2[1])) and (punto[1] <= max(p1[1], p2[1])):
-                if punto[0] <= max(p1[0], p2[0]):
-                    if p1[1] != p2[1]:
-                        x_intersect = (punto[1] - p1[1]) * (p2[0] - p1[0]) / (p2[1] - p1[1]) + p1[0]
-                        if p1[0] == p2[0] or punto[0] <= x_intersect:
-                            return False
-
-        # Verificar si el punto está dentro de los límites interiores
-        for i in range(n_interiores):
-            p1 = interiores[i]
-            p2 = interiores[(i + 1) % n_interiores]
-            if (punto[1] > min(p1[1], p2[1])) and (punto[1] <= max(p1[1], p2[1])):
-                if punto[0] <= max(p1[0], p2[0]):
-                    if p1[1] != p2[1]:
-                        x_intersect = (punto[1] - p1[1]) * (p2[0] - p1[0]) / (p2[1] - p1[1]) + p1[0]
-                        if p1[0] == p2[0] or punto[0] <= x_intersect:
-                            return True
-        return False
-
-    def generar_punto_aleatorio_en_zona(self, exteriores, interiores):
-        x_min = min(np.min(exteriores[:, 0]), np.min(interiores[:, 0]))
-        x_max = max(np.max(exteriores[:, 0]), np.max(interiores[:, 0]))
-        y_min = min(np.min(exteriores[:, 1]), np.min(interiores[:, 1]))
-        y_max = max(np.max(exteriores[:, 1]), np.max(interiores[:, 1]))
-
-        punto_generado = [random.uniform(x_min, x_max), random.uniform(y_min, y_max)]
-        while not self.punto_dentro_de_zona(punto_generado, exteriores, interiores):
-            punto_generado = [random.uniform(x_min, x_max), random.uniform(y_min, y_max)]
-        return punto_generado
 
     @staticmethod
     def plot_circle(x, y, size, color="-b"):  # pragma: no cover
@@ -287,39 +255,3 @@ class RRT:
         d = math.hypot(dx, dy)
         theta = math.atan2(dy, dx)
         return d, theta
-
-def main(args=None):
-    show_animation = True
-
-    gx = 6.0
-    gy = 10.0
-
-    print("start")
-
-    # ====Search Path with RRT====
-    obstacleList = [(5, 5, 1), (3, 6, 2), (3, 8, 2), (3, 10, 2), (7, 5, 2),
-                    (9, 5, 2), (8, 10, 1)]  # [x, y, radius]
-    # Set Initial parameters
-    rrt = RRT(
-        start=[0, 0],
-        goal=[gx, gy],
-        rand_area=[-2, 15],
-        obstacle_list=obstacleList,
-        robot_radius=0.8
-    )
-    path = rrt.planning(animation=show_animation)
-
-    if path is None:
-        print("Cannot find path")
-    else:
-        print("found path!!")
-
-        # Draw final path
-        if show_animation:
-            rrt.draw_graph()
-            plt.plot([x for (x, y) in path], [y for (x, y) in path], '-r')
-            plt.grid(True)
-            plt.pause(0.01)  # Need for Mac
-            plt.show()
-if __name__ == '__main__':
-    main()

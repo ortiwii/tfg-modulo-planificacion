@@ -1,6 +1,10 @@
 import numpy as np
-from PathGenerator import interpolar_spline
 
+import sys
+import os
+
+sys.path.append(os.path.abspath("../.."))
+from utils.PathGenerator import interpolar_spline
 
 class SimpleMiddlePath():
 
@@ -29,7 +33,6 @@ class SimpleMiddlePath():
         self.conos_naranjas_grandes_azules = None
         self.conos_naranjas_grandes_amarillos = None
         self.primer_punto_coche = False
-
 
     def set_eje_dirección(self, x, y):
         self.eje_direccion = np.array([x, y])
@@ -146,22 +149,20 @@ class SimpleMiddlePath():
                 return None, None, None, None, None, None
         else:
             return None, None, np.array([]), None, None, None
+
+
 def main(args=None):
 
-    import sys
-    import os
-    sys.path.append(os.path.abspath(".."))
     import matplotlib.pyplot as plt
     import matplotlib.gridspec as gridspec
     from utils.map_manager import load_pickle_map, calcular_tramos_por_distancia
-
 
     # ------------------------------------------------------------------------------------------------------------------
     # PARA TESTING -----------------------------------------------------------------------------------------------------
     # ------------------------------------------------------------------------------------------------------------------
 
     # - Pistas ---------
-    file_path = '../tracks/pista-ordenada-00.map'  # Pista ordenada sin trayectoria definida
+    file_path = '../../tracks/pista-ordenada-00.map'  # Pista ordenada sin trayectoria definida
 
     # - Cargar mapa ----
     mapa = load_pickle_map(file_path)
@@ -204,8 +205,8 @@ def main(args=None):
             conos_amarillos = mapa['amarillos'][tramos_amarillo[tramo_act][0]:tramos_amarillo[tramo_act][1] + 1]
 
         waypoints, path, P, conexiones, x, y = planificador.planficar_trayectoria(conos_azules, conos_amarillos,
-                                                                         mapa['naranjas'],
-                                                                         mapa['naranjas_grandes'], False)
+                                                                                  mapa['naranjas'],
+                                                                                  mapa['naranjas_grandes'], False)
         if waypoints is not None:
             # Crear la figura y los subplots con tamaño relativo
             ax1.plot(path[0], path[1], '-', color='black', label='Path')
@@ -242,5 +243,7 @@ def main(args=None):
             fig.canvas.flush_events()
         plt.pause(0.5)
     plt.pause(5.0)
+
+
 if __name__ == '__main__':
     main()

@@ -2,9 +2,10 @@ import numpy as np
 from scipy.spatial import Delaunay
 import sys
 import os
-from PathGenerator import interpolar_spline
+sys.path.append(os.path.abspath("../.."))
+from utils.PathGenerator import interpolar_spline
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../')))
 
 
 class TriangulacionDelaunay():
@@ -66,8 +67,8 @@ class TriangulacionDelaunay():
         self.conos_azules = conos_azules
         self.conos_amarillos = conos_amarillos
         self.conos_naranjas = conos_naranjas
-        self.conos_naranjas_grandes_azules = conos_naranjas_grandes[0]
-        self.conos_naranjas_grandes_amarillos = conos_naranjas_grandes[1]
+        # self.conos_naranjas_grandes_azules = conos_naranjas_grandes[0]
+        # self.conos_naranjas_grandes_amarillos = conos_naranjas_grandes[1]
         self.primer_punto_coche = primer_punto_coche
 
         # - Llamada a la planificación de la trayectoria
@@ -198,9 +199,6 @@ class TriangulacionDelaunay():
 
 
 def main(args=None):
-    import sys
-    import os
-    sys.path.append(os.path.dirname(__file__))
     from utils.map_manager import load_pickle_map, calcular_tramos_por_distancia
     import matplotlib.pyplot as plt
     import matplotlib.gridspec as gridspec
@@ -212,7 +210,7 @@ def main(args=None):
     # ------------------------------------------------------------------------------------------------------------------
 
     # - Pistas ---------
-    file_path = '../tracks/pista-ordenada-00.map'  # Pista ordenada sin trayectoria definida
+    file_path = '../../tracks/pista-ordenada-00.map'  # Pista ordenada sin trayectoria definida
 
     # - Cargar mapa ----
     mapa = load_pickle_map(file_path)
